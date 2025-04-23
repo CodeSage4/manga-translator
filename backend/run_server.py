@@ -1,11 +1,15 @@
 import os
 import sys
 import uvicorn
+from dotenv import load_dotenv
 
 print("=== Manga Translator Backend Server ===")
 
 # Add the current directory to the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Check if Tesseract is available
 try:
@@ -17,18 +21,16 @@ try:
     except Exception as e:
         print(f"Tesseract OCR not found: {e}")
         # Try to set from .env file
-        try:
-            from dotenv import load_dotenv
-            load_dotenv()
-            tesseract_path = os.environ.get('TESSERACT_PATH')
-            if tesseract_path:
-                print(f"Setting Tesseract path from .env: {tesseract_path}")
-                pytesseract.pytesseract.tesseract_cmd = tesseract_path
+        tesseract_path = os.environ.get('TESSERACT_PATH')
+        if tesseract_path:
+            print(f"Setting Tesseract path from .env: {tesseract_path}")
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
+            try:
                 print(f"Tesseract version: {pytesseract.get_tesseract_version()}")
-            else:
-                print("No TESSERACT_PATH found in .env file")
-        except Exception as e:
-            print(f"Error loading .env file: {e}")
+            except Exception as e:
+                print(f"Error getting Tesseract version after setting path: {e}")
+        else:
+            print("No TESSERACT_PATH found in .env file")
 except ImportError:
     print("pytesseract not installed")
 
@@ -38,21 +40,16 @@ try:
     print("PDF2Image found, PDF support should be available")
     
     # Check if Poppler is available
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-        poppler_path = os.environ.get('POPPLER_PATH')
-        if poppler_path:
-            print(f"Poppler path from .env: {poppler_path}")
-            # Verify if the directory exists
-            if os.path.exists(poppler_path):
-                print("Poppler directory exists")
-            else:
-                print(f"WARNING: Poppler directory not found at {poppler_path}")
+    poppler_path = os.environ.get('POPPLER_PATH')
+    if poppler_path:
+        print(f"Poppler path from .env: {poppler_path}")
+        # Verify if the directory exists
+        if os.path.exists(poppler_path):
+            print("Poppler directory exists")
         else:
-            print("No POPPLER_PATH found in .env file")
-    except Exception as e:
-        print(f"Error checking Poppler: {e}")
+            print(f"WARNING: Poppler directory not found at {poppler_path}")
+    else:
+        print("No POPPLER_PATH found in .env file")
 except ImportError:
     print("pdf2image not installed, PDF support will not be available")
 
@@ -72,17 +69,10 @@ upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage",
 result_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "storage", "results")
 temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp")
 
-if not os.path.exists(upload_dir):
-    print(f"Creating upload directory: {upload_dir}")
-    os.makedirs(upload_dir, exist_ok=True)
-
-if not os.path.exists(result_dir):
-    print(f"Creating result directory: {result_dir}")
-    os.makedirs(result_dir, exist_ok=True)
-    
-if not os.path.exists(temp_dir):
-    print(f"Creating temp directory: {temp_dir}")
-    os.makedirs(temp_dir, exist_ok=True)
+# Create directories if they don't exist
+os.makedirs(upload_dir, exist_ok=True)
+os.makedirs(result_dir, exist_ok=True)
+os.makedirs(temp_dir, exist_ok=True)
 
 print("All required directories have been verified")
 
@@ -92,4 +82,4 @@ print("API will be available at http://localhost:8000\n")
 # Run the uvicorn server
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.simplified_main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("app.simplified_main:app", host="0.0.0.0", port=8000, reload=True)

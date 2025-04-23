@@ -65,8 +65,12 @@ def test_poppler():
                 escaped_path = poppler_path.replace("\\", "\\\\")
                 
                 # Read the current content
-                with open(env_path, 'r') as f:
-                    content = f.read()
+                try:
+                    with open(env_path, 'r') as f:
+                        content = f.read()
+                except Exception as e:
+                    print(f"Error reading .env file: {e}")
+                    return False
                 
                 # Update or add the Poppler path
                 if "POPPLER_PATH=" in content:
@@ -80,12 +84,20 @@ def test_poppler():
                             new_lines.append(line)
                     
                     # Write back the updated content
-                    with open(env_path, 'w') as f:
-                        f.write('\n'.join(new_lines))
+                    try:
+                        with open(env_path, 'w') as f:
+                            f.write('\n'.join(new_lines))
+                    except Exception as e:
+                        print(f"Error writing to .env file: {e}")
+                        return False
                 else:
                     # Add new line
-                    with open(env_path, 'a') as f:
-                        f.write(f"\nPOPPLER_PATH={escaped_path}\n")
+                    try:
+                        with open(env_path, 'a') as f:
+                            f.write(f"\nPOPPLER_PATH={escaped_path}\n")
+                    except Exception as e:
+                        print(f"Error appending to .env file: {e}")
+                        return False
                 
                 print(f"Updated .env file with Poppler path: {escaped_path}")
             
@@ -111,4 +123,4 @@ if __name__ == "__main__":
         print("\nPoppler configuration issue detected.")
         print("Please install Poppler and configure the path.")
     
-    input("\nPress Enter to exit...") 
+    input("\nPress Enter to exit...")

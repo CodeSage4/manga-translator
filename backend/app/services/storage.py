@@ -5,7 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 from fastapi import UploadFile
 
-from app.core.config import settings
+from app.config import settings
 
 class StorageService:
     def __init__(self):

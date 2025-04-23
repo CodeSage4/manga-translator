@@ -1,37 +1,30 @@
 import cv2
 import numpy as np
-import pytesseract
 from PIL import Image, ImageDraw, ImageFont
+import easyocr
 import os
 import argparse
 from googletrans import Translator
 
 class MangaProcessor:
-    def __init__(self, tesseract_path=None):
-        """Initialize the manga processor with optional tesseract path"""
-        # Configure tesseract path if provided
-        if tesseract_path:
-            pytesseract.pytesseract.tesseract_cmd = tesseract_path
-        else:
-            # Try to load from environment variable
-            import os
-            env_path = os.environ.get('TESSERACT_PATH')
-            if env_path:
-                pytesseract.pytesseract.tesseract_cmd = env_path
+    def __init__(self):
+        """Initialize the manga processor"""
+        # Initialize EasyOCR reader
+        self.reader = easyocr.Reader(['ja', 'en'])  # Japanese & English support
         
         # Initialize translator
         self.translator = Translator()
         
-        # Set language mapping for Tesseract
+        # Language mapping for EasyOCR
         self.lang_map = {
-            "Japanese": "jpn",
-            "Chinese": "chi_sim",
-            "Korean": "kor",
-            "English": "eng"
+            "Japanese": "ja",
+            "Chinese": "ch_sim",
+            "Korean": "ko",
+            "English": "en"
         }
         
         # Default parameters for text detection
-        self.min_confidence = 40  # Minimum confidence for OCR
+        self.min_confidence = 0.4  # Minimum confidence for OCR
         self.padding = 5  # Padding around detected text regions
     
     def detect_text_regions(self, image_path, source_language="Japanese"):
@@ -102,36 +95,40 @@ class MangaProcessor:
     
     def perform_ocr(self, text_regions, source_language="Japanese"):
         """
-        Step 3: Perform OCR on the text regions
+        Perform OCR on the text regions using EasyOCR
         Returns the text regions with extracted text
         """
         print(f"Performing OCR on {len(text_regions)} regions...")
         
-        # Get the appropriate language code for Tesseract
-        lang_code = self.lang_map.get(source_language, "eng")
-        
-        # Configure OCR
-        custom_config = f'--oem 1 --psm 11 -l {lang_code}'
+        # Get the appropriate language code
+        lang_code = self.lang_map.get(source_language, "en")
         
         # Process each region
         for i, region in enumerate(text_regions):
-            # Convert the region to PIL Image
-            pil_img = Image.fromarray(cv2.cvtColor(region["image"], cv2.COLOR_BGR2RGB))
-            
-            # Perform OCR
-            text = pytesseract.image_to_string(pil_img, config=custom_config, lang=lang_code)
-            
-            # Clean up text (remove extra whitespace and newlines)
-            text = ' '.join(text.strip().split())
-            
-            # Store the extracted text
-            region["text"] = text
-            
-            print(f"Region {i+1}: {text if text else '[No text detected]'}")
-        
-        # Filter out regions with no text
-        text_regions = [r for r in text_regions if r.get("text", "").strip()]
-        print(f"Found {len(text_regions)} regions with text")
+            try:
+                # Perform OCR on the region
+                results = self.reader.readtext(region["image"])
+                
+                # Extract text and confidence
+                if results:
+                    text = " ".join([result[1] for result in results])
+                    confidence = sum([result[2] for result in results]) / len(results)
+                else:
+                    text = ""
+                    confidence = 0.0
+                
+                # Clean up text (remove extra whitespace and newlines)
+                text = " ".join(text.split())
+                
+                # Store results in region
+                region["text"] = text
+                region["confidence"] = confidence
+                
+                print(f"Region {i+1}: Confidence {confidence:.2f} - Text: {text}")
+            except Exception as e:
+                print(f"Error processing region {i+1}: {e}")
+                region["text"] = ""
+                region["confidence"] = 0.0
         
         return text_regions
     
@@ -294,13 +291,12 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Output image path")
     parser.add_argument("--source", default="Japanese", help="Source language")
     parser.add_argument("--target", default="English", help="Target language")
-    parser.add_argument("--tesseract", help="Path to Tesseract executable")
     
     # Parse arguments
     args = parser.parse_args()
     
     # Create processor
-    processor = MangaProcessor(tesseract_path=args.tesseract)
+    processor = MangaProcessor()
     
     # Process the image
     success = processor.process_manga_image(
@@ -310,4 +306,4 @@ if __name__ == "__main__":
     if success:
         print("Processing completed successfully!")
     else:
-        print("Processing failed.") 
+        print("Processing failed.")

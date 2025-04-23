@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import os
 from typing import List, Dict, Tuple
 
-from app.core.config import settings
+from app.config import settings
 
 class RenderingService:
     def __init__(self):

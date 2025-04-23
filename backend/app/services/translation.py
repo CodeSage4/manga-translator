@@ -1,8 +1,7 @@
 from typing import List, Dict
 from transformers import MarianMTModel, MarianTokenizer
 
-from app.core.config import settings
-
+from app.config import settings
 class TranslationService:
     def __init__(self):
         self.models = {}

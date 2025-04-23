@@ -2,18 +2,19 @@ version: '3.8'
 
 services:
   frontend:
-    build:
-      context: ./frontend
+    build: ./frontend
     ports:
       - "3000:3000"
     depends_on:
       - backend
     environment:
       - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
   backend:
-    build:
-      context: ./backend
+    build: ./backend
     ports:
       - "8000:8000"
     depends_on:
@@ -26,8 +27,10 @@ services:
       - STORAGE_TYPE=local
       - LOCAL_STORAGE_PATH=/app/storage
       - TEMP_DIR=/app/temp
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ./data/storage:/app/storage
+      - ./backend:/app
+      - ./storage:/app/storage
       - ./data/temp:/app/temp
 
   worker:
@@ -66,4 +69,4 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data: 
+  postgres_data:
