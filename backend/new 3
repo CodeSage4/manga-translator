@@ -1,0 +1,3 @@
+import paddle
+print(paddle)
+print(paddle.__file__)  # This will show where the module is loaded from
